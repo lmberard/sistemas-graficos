@@ -400,26 +400,68 @@
             *********************************************************************************
             */
 
-            // tierra
-            m1=mat4.create(); 
-            mat4.translate(m1,m1,[60,0,0]);    
-            setTransform(tierra,m1);
+            // glMatrix functions
+            /*
+            a: matriz que recibe
+            v: vector para trasladar
+            rad: angulo de rotacion en radianes 
+
+            translate(out, a, v)
+            rotate(out, a, rad, axis)
+            mul(): multiply matrices
+            */
+
+            // variables:
+            oneYear = 10; // this only makes it faster or slower. arbitrarily number
+            oneDay = oneYear / 365
+            oneMonth = oneDay * 30;
+            oneMinute = oneDay / 1440;
+            t = tiempo
+            angleEarthRotation = 23 / 180 * Math.PI;
+            angleISSRotation = 52 / 180 * Math.PI;
+            orbitTimeISS = 90 * oneMinute;
+
+            // tierra --------------------------------------------------------------------
+            // lo que tarda en dar una vuelta al sol (1 year)
+            earthYearTransform = mat4.create();
+            mat4.rotateY(earthYearTransform, earthYearTransform, 2 * Math.PI * t  / oneYear);
+            mat4.translate(earthYearTransform,earthYearTransform, [60,0,0]);
+
+            // lo que tarda en dar una vuelta sobre si mismo (1 day) pero con una rotacion de 23 grados
+            earthDayTransform = mat4.create();
+            mat4.rotateZ(earthDayTransform, earthDayTransform, -angleEarthRotation)  // relación de la inclinacion de 23 grados, por eso sobre z y no sobre X
+            mat4.rotateY(earthDayTransform, earthDayTransform, 2 * Math.PI * t / oneDay)
+
+            earthTotalTransform = mat4.create();
+            mat4.mul(earthTotalTransform, earthTotalTransform, earthYearTransform)
+            mat4.mul(earthTotalTransform, earthTotalTransform, earthDayTransform)
+
+            setTransform(tierra,earthTotalTransform);
   
-            // luna
-            m2=mat4.create();      
-            mat4.translate(m2,m2,[90,0,0]);    
-            setTransform(luna,m2);  
+            // luna --------------------------------------------------------------------
+            moonTransform = mat4.create();
+            // primero multiplico con la de la tierra porque es relativa a ese movimiento (saco la parte de la rotacion del eje)
+            mat4.mul(moonTransform , moonTransform , earthYearTransform)
+            mat4.rotateY(moonTransform, moonTransform, 2 * Math.PI * t  / oneMonth)
+            mat4.translate(moonTransform,moonTransform,[20,0,0]);    
+            setTransform(luna,moonTransform);  
 
-            // apollo
-            m3=mat4.create();
-            mat4.translate(m3,m3,[110,0,0]); 
-            setTransform(apollo,m3);    
+            // apollo --------------------------------------------------------------------
+            apolloTransform = mat4.create();
+            // primero multiplico con la de la luna porque es relativa a ese movimiento
+            mat4.mul(apolloTransform, apolloTransform, moonTransform)
+            mat4.translate(apolloTransform,apolloTransform,[1.5,1.5,0]);
+            mat4.rotateZ(apolloTransform, apolloTransform, - Math.PI / 4)
+            setTransform(apollo,apolloTransform);    
 
-            // iss
-            m4=mat4.create(); 
-            mat4.translate(m4,m4,[130,0,0]);            
-            setTransform(iss,m4);  
-
+            // iss --------------------------------------------------------------------
+            issTransform = mat4.create();
+            // primero multiplico con la de la tierra porque es relativa a ese movimiento
+            mat4.mul(issTransform , issTransform , earthYearTransform)
+            mat4.rotateY(issTransform, issTransform, - 2 * Math.PI * t  / oneYear);
+            mat4.rotateZ(issTransform, issTransform, - 2 * Math.PI * t  / orbitTimeISS)
+            mat4.translate(issTransform,issTransform,[10,0,0]);          
+            setTransform(iss,issTransform);  
 
             // *********************************************************************************************
 
